@@ -4,6 +4,7 @@ export default function TaskApp() {
   return (
     <div>
       <Header />
+      <h1>Task App</h1>
     </div>
   );
 }

@@ -1,13 +1,15 @@
 import React from 'react';
+import { Button, Dropdown, Input } from '../ui';
 
 const Header = () => {
   return (
-    <header className="font-bold text-2xl text-white bg-blue-500 p-4">
-      <h1>Task App</h1>
+    <header className="flex p-3 justify-between items-center self-strech">
+      <h1>T-ALIGN</h1>
 
-      <div className="header__links">
-        <a href="/">Home</a>
-        <a href="/tasks">Tasks</a>
+      <div className="flex w-auto p-0.75 items-center gap-3">
+        <Input placeholder={'Search Tasks...'} />
+        <Dropdown />
+        <Button />
       </div>
     </header>
   );
