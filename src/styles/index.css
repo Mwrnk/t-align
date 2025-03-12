@@ -43,3 +43,62 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+
+/* Adicionando classes CSS para responsividade */
+
+/* Garantir que os contêineres de tarefas sejam responsivos */
+.task-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 100%;
+  max-width: 100%;
+}
+
+/* Garantir que os cartões de tarefas sejam responsivos */
+.task-card {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* Garantir que os slots de Swapy sejam responsivos */
+.swapy-slot {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* Garantir que os itens de Swapy sejam responsivos */
+.swapy-item {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* Garantir que os contêineres de colunas sejam responsivos */
+.column-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 100%;
+  max-width: 100%;
+}
+
+/* Garantir que os títulos das colunas sejam responsivos */
+.column-title {
+  text-align: center;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* Garantir que os contêineres de colunas sejam responsivos */
+.column-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
