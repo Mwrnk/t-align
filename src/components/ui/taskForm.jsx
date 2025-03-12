@@ -1,58 +1,41 @@
 import React from 'react';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import arrowDownIcon from '../../assets/icons/CaretDown.svg';
 
-export const TaskForm = ({ isOpen, onClose, onAddTask, onEditTask, task }) => {
+export const TaskForm = ({ isOpen, onClose, onAddTask }) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState('Medium');
 
-  // Populate form when editing a task
-  useEffect(() => {
-    if (task) {
-      setTitle(task.title || '');
-      setDescription(task.description || '');
-      setPriority(task.priority || 'Medium');
-    } else {
-      // Reset form when not editing
-      setTitle('');
-      setDescription('');
-      setPriority('Medium');
-    }
-  }, [task]);
-
   if (!isOpen) return null;
 
   const handleSave = () => {
-    if (!title.trim()) return;
+    if (!title.trim()) return; // Don't save empty tasks
 
-    const updatedTask = {
-      id: task ? task.id : Date.now().toString(), // Keep original ID when editing
+    const newTask = {
+      id: Date.now().toString(), // Simple unique ID
       title,
       description,
       priority,
-      status: task ? task.status : 'Todo',
-      createdAt: task ? task.createdAt : new Date().toLocaleDateString(),
+      status: 'Todo', // Default status
+      createdAt: new Date().toLocaleDateString(),
     };
 
-    if (task && typeof onEditTask === 'function') {
-      onEditTask(updatedTask);
-    } else if (typeof onAddTask === 'function') {
-      onAddTask(updatedTask);
-    } else {
-      console.error('Neither onEditTask nor onAddTask is a valid function');
-    }
+    onAddTask(newTask);
 
+    // Reset form
+    setTitle('');
+    setDescription('');
+    setPriority('Medium');
+
+    // Close modal
     onClose();
   };
 
   return (
     <div className="fixed inset-0 bg-charcoal/50 flex items-center justify-center drop-shadow-2xl">
       <div className="bg-zinc-800 p-6 rounded-xl flex flex-col gap-4 w-96">
-        <h2 className="text-xl font-bold text-center">
-          {task ? 'Edit Task' : 'Add New Task'}
-        </h2>
         <input
           placeholder="Task title"
           className="p-2.5 border-1 rounded-xl bg-charcoal border-steel"
@@ -108,20 +91,12 @@ export const TaskForm = ({ isOpen, onClose, onAddTask, onEditTask, task }) => {
             </div>
           )}
         </button>
-        <div className="flex gap-3">
-          <button
-            onClick={onClose}
-            className="p-2.5 bg-charcoal border-1 border-steel rounded-xl text-white flex-1"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleSave}
-            className="p-2.5 bg-steel-blue rounded-xl text-white hover:bg-steel-blue-dark flex-1"
-          >
-            Save
-          </button>
-        </div>
+        <button
+          onClick={handleSave}
+          className="p-2.5 bg-steel-blue rounded-xl text-white hover:bg-steel-blue-dark"
+        >
+          Save
+        </button>
       </div>
     </div>
   );
