@@ -6,6 +6,8 @@ export default function TaskApp() {
   const [isModalOpen, setIsModalOpen] = React.useState(false);
   const [tasks, setTasks] = React.useState([]);
   const [editingTask, setEditingTask] = React.useState(null);
+  const [searchQuery, setSearchQuery] = React.useState('');
+  const [selectedPriority, setSelectedPriority] = React.useState('All');
 
   const openModal = (task = null) => {
     setEditingTask(task);
@@ -48,14 +50,33 @@ export default function TaskApp() {
     );
   };
 
-  // Filter tasks by status
-  const todoTasks = tasks.filter((task) => task.status === 'Todo');
-  const inProgressTasks = tasks.filter((task) => task.status === 'In Progress');
-  const doneTasks = tasks.filter((task) => task.status === 'Done');
+  // Filter tasks based on search query and priority
+  const filterTasks = (taskList) => {
+    return taskList.filter(task => {
+      const matchesSearch = searchQuery.trim() === '' ||
+        task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        task.description.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      const matchesPriority = selectedPriority === 'All' || 
+        task.priority === selectedPriority;
+
+      return matchesSearch && matchesPriority;
+    });
+  };
+
+  // Filter tasks by status and then apply search/priority filters
+  const todoTasks = filterTasks(tasks.filter((task) => task.status === 'Todo'));
+  const inProgressTasks = filterTasks(tasks.filter((task) => task.status === 'In Progress'));
+  const doneTasks = filterTasks(tasks.filter((task) => task.status === 'Done'));
 
   return (
     <Layout>
-      <Header handleButton={openModal} />
+      <Header 
+        handleButton={openModal}
+        onSearch={setSearchQuery}
+        onPriorityFilter={setSelectedPriority}
+        selectedPriority={selectedPriority}
+      />
       <div className="flex flex-row p-2.5 items-start gap-3">
         <TaskForm
           isOpen={isModalOpen}
