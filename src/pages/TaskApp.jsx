@@ -24,7 +24,12 @@ export default function TaskApp() {
   const updateTask = (updatedTask) => {
     if (editingTask) {
       setTasks(
-        tasks.map((task) => (task.id === editingTask.id ? updatedTask : task))
+        tasks.map((task) => {
+          if (task.id === updatedTask.id) {
+            return updatedTask;
+          }
+          return task;
+        })
       );
     } else {
       addTask(updatedTask);
@@ -56,6 +61,7 @@ export default function TaskApp() {
           isOpen={isModalOpen}
           onClose={closeModal}
           onAddTask={addTask}
+          onEditTask={updateTask}
           task={editingTask}
         />
         <TaskSection
