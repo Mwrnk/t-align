@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, Sun, Moon, LayoutGrid, List, Calendar, UploadCloud } from 'lucide-react';
+import { Settings, Sun, Moon, LayoutGrid, List } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -47,18 +47,6 @@ const Layout = ({ children }) => {
     }
     return 'board';
   });
-  const [taskReminders, setTaskReminders] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('taskReminders') === 'true';
-    }
-    return false;
-  });
-  const [syncData, setSyncData] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('syncData') === 'true';
-    }
-    return false;
-  });
 
   // Apply compact mode effect
   useEffect(() => {
@@ -83,9 +71,7 @@ const Layout = ({ children }) => {
   useEffect(() => {
     localStorage.setItem('sortingMethod', sortingMethod);
     localStorage.setItem('viewMode', viewMode);
-    localStorage.setItem('taskReminders', taskReminders);
-    localStorage.setItem('syncData', syncData);
-  }, [sortingMethod, viewMode, taskReminders, syncData]);
+  }, [sortingMethod, viewMode]);
 
   const handleCompactModeChange = (checked) => {
     setCompactMode(checked);
@@ -112,16 +98,6 @@ const Layout = ({ children }) => {
     toast.info(`View mode set to ${value}`);
   };
 
-  const handleTaskRemindersChange = (checked) => {
-    setTaskReminders(checked);
-    toast.info(`Task reminders ${checked ? 'enabled' : 'disabled'}`);
-  };
-
-  const handleSyncDataChange = (checked) => {
-    setSyncData(checked);
-    toast.info(`Data synchronization ${checked ? 'enabled' : 'disabled'}`);
-  };
-
   const ThemeIcon = currentTheme === 'dark' ? Moon : Sun;
 
   return (
@@ -130,7 +106,7 @@ const Layout = ({ children }) => {
 
       {/* Responsive footer */}
       <footer className="p-4 flex justify-between items-center text-sm text-muted-foreground bg-muted">
-        <p>T-Align &copy; {new Date().getFullYear()}</p>
+        <p>T-Align</p>
         
         <div className="flex items-center gap-4">
           {/* Quick theme toggle */}
@@ -161,10 +137,9 @@ const Layout = ({ children }) => {
           </DialogHeader>
           
           <Tabs defaultValue="appearance" className="w-full">
-            <TabsList className="grid grid-cols-3 mb-4">
+            <TabsList className="grid grid-cols-2 mb-4">
               <TabsTrigger value="appearance">Appearance</TabsTrigger>
               <TabsTrigger value="behavior">Behavior</TabsTrigger>
-              <TabsTrigger value="data">Data & Sync</TabsTrigger>
             </TabsList>
 
             <TabsContent value="appearance" className="space-y-4">
@@ -265,43 +240,6 @@ const Layout = ({ children }) => {
                     </SelectItem>
                   </SelectContent>
                 </Select>
-              </div>
-            </TabsContent>
-
-            <TabsContent value="data" className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label htmlFor="task-reminders">Task Reminders</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Enable notifications for upcoming tasks
-                  </p>
-                </div>
-                <Switch 
-                  id="task-reminders" 
-                  checked={taskReminders}
-                  onCheckedChange={handleTaskRemindersChange}
-                />
-              </div>
-              
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label htmlFor="sync-data">Synchronize Data</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Save tasks to cloud when available
-                  </p>
-                </div>
-                <Switch 
-                  id="sync-data" 
-                  checked={syncData}
-                  onCheckedChange={handleSyncDataChange}
-                />
-              </div>
-
-              <div className="mt-6 pt-4 border-t">
-                <Button variant="outline" className="w-full">
-                  <UploadCloud className="mr-2 h-4 w-4" />
-                  Export Tasks
-                </Button>
               </div>
             </TabsContent>
           </Tabs>
