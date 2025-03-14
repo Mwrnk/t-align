@@ -1,2 +1,4 @@
-export { default as Header } from './header';
-export { default as Layout } from './layout';
+import Header from './header';
+import Layout from './layout';
+
+export { Header, Layout };

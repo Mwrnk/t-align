@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import arrowDownIcon from '../../assets/icons/CaretDown.svg';
+import calendarIcon from '../../assets/icons/Calendar.svg';
 
 const PriorityDropdown = ({ value, onChange, isOpen, setIsOpen }) => {
   const priorities = ['High', 'Medium', 'Low'];
@@ -55,7 +56,8 @@ export const TaskForm = ({ isOpen, onClose, onAddTask, onEditTask, task }) => {
     description: '',
     priority: 'Medium',
     status: 'Todo',
-    createdAt: ''
+    createdAt: '',
+    dueDate: ''
   });
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [titleError, setTitleError] = useState('');
@@ -75,6 +77,30 @@ export const TaskForm = ({ isOpen, onClose, onAddTask, onEditTask, task }) => {
     };
   }, [isOpen, onClose]);
 
+  // Format date for the input field (YYYY-MM-DD)
+  const formatDateForInput = (dateString) => {
+    if (!dateString) return '';
+    
+    try {
+      const date = new Date(dateString);
+      return date.toISOString().split('T')[0];
+    } catch (e) {
+      return '';
+    }
+  };
+
+  // Format date for display (MM/DD/YYYY)
+  const formatDateForDisplay = (dateString) => {
+    if (!dateString) return '';
+    
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString();
+    } catch (e) {
+      return '';
+    }
+  };
+
   // Reset form or load task data when modal opens
   useEffect(() => {
     // Only run when modal opens
@@ -87,7 +113,8 @@ export const TaskForm = ({ isOpen, onClose, onAddTask, onEditTask, task }) => {
           description: task.description || '',
           priority: task.priority || 'Medium',
           status: task.status || 'Todo',
-          createdAt: task.createdAt
+          createdAt: task.createdAt,
+          dueDate: task.dueDate || ''
         });
       } else {
         // Add mode - reset form
@@ -105,7 +132,8 @@ export const TaskForm = ({ isOpen, onClose, onAddTask, onEditTask, task }) => {
       description: '',
       priority: 'Medium',
       status: 'Todo',
-      createdAt: ''
+      createdAt: '',
+      dueDate: ''
     });
   };
 
@@ -158,7 +186,7 @@ export const TaskForm = ({ isOpen, onClose, onAddTask, onEditTask, task }) => {
       }}
     >
       <div 
-        className="bg-zinc-800 p-6 rounded-xl flex flex-col gap-4 w-96 animate-fadeIn"
+        className="bg-zinc-800 p-6 rounded-xl flex flex-col gap-4 w-full max-w-md mx-4 animate-fadeIn"
         onClick={(e) => e.stopPropagation()}
       >
         <h2 id="form-title" className="text-xl font-semibold text-white">
@@ -190,13 +218,35 @@ export const TaskForm = ({ isOpen, onClose, onAddTask, onEditTask, task }) => {
           aria-label="Task description"
         />
         
-        <label className="text-white text-sm">Priority</label>
-        <PriorityDropdown 
-          value={formData.priority}
-          onChange={(value) => handleChange('priority', value)}
-          isOpen={isDropdownOpen}
-          setIsOpen={setIsDropdownOpen}
-        />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="text-white text-sm block mb-1">Priority</label>
+            <PriorityDropdown 
+              value={formData.priority}
+              onChange={(value) => handleChange('priority', value)}
+              isOpen={isDropdownOpen}
+              setIsOpen={setIsDropdownOpen}
+            />
+          </div>
+          
+          <div>
+            <label className="text-white text-sm block mb-1">Due Date</label>
+            <div className="relative">
+              <input
+                type="date"
+                className="p-2.5 pl-10 border-1 rounded-xl bg-charcoal border-steel w-full transition-colors focus:outline-none focus:ring-2 focus:ring-steel-blue"
+                onChange={(e) => handleChange('dueDate', e.target.value)}
+                value={formatDateForInput(formData.dueDate)}
+                aria-label="Due date"
+              />
+              <img 
+                src={calendarIcon} 
+                alt="Calendar" 
+                className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5" 
+              />
+            </div>
+          </div>
+        </div>
 
         <div className="flex gap-2 mt-2">
           <button
