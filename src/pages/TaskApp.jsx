@@ -85,58 +85,6 @@ export default function TaskApp() {
     }
   }, [sortingMethod]);
 
-  // Verificar tarefas com prazos próximos
-  useEffect(() => {
-    const checkUpcomingTasks = () => {
-      const taskRemindersEnabled = localStorage.getItem('taskReminders') === 'true';
-      if (!taskRemindersEnabled || !tasks.length) return;
-      
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      
-      const tomorrow = new Date(today);
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      
-      // Filtrar tarefas próximas
-      const upcomingTasks = tasks.filter(task => {
-        if (!task.dueDate || task.status === 'Done') return false;
-        
-        const dueDate = new Date(task.dueDate);
-        dueDate.setHours(0, 0, 0, 0);
-        
-        return (
-          dueDate.getTime() === today.getTime() || 
-          dueDate.getTime() === tomorrow.getTime()
-        );
-      });
-      
-      // Mostrar notificações
-      upcomingTasks.forEach(task => {
-        const dueDate = new Date(task.dueDate);
-        dueDate.setHours(0, 0, 0, 0);
-        
-        const isDueToday = dueDate.getTime() === today.getTime();
-        
-        if (isDueToday) {
-          toast.warning(`Due today: ${task.title}`, {
-            description: `This task is due today: ${task.priority} priority`,
-            duration: 5000,
-          });
-        } else {
-          toast.info(`Due tomorrow: ${task.title}`, {
-            description: `This task is due tomorrow: ${task.priority} priority`,
-            duration: 5000,
-          });
-        }
-      });
-    };
-    
-    // Verificar ao carregar e a cada hora
-    checkUpcomingTasks();
-    const interval = setInterval(checkUpcomingTasks, 60 * 60 * 1000);
-    return () => clearInterval(interval);
-  }, [tasks]);
-
   // Configurar viewport e configurações da aplicação
   useEffect(() => configureViewport(), []);
 
