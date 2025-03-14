@@ -1,13 +1,19 @@
-import React from 'react';
+import React, { useState, memo } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { Checkbox } from "@/components/ui/checkbox";
+import { Pencil, Trash, ChevronDown, ChevronUp, Calendar } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import editIcon from '../../assets/icons/PencilSimpleLine.svg';
-import removeIcon from '../../assets/icons/Trash.svg';
 import dragIcon from '../../assets/icons/DragHandle.svg';
-import checkIcon from '../../assets/icons/Check.svg';
 import calendarIcon from '../../assets/icons/Calendar.svg';
+import { cn } from '@/lib/utils';
+import DeleteTaskDialog from './DeleteTaskDialog';
 
-function TaskCard({ id, task, onEdit, onDelete, onStatusChange, isDragging }) {
+const TaskCard = memo(({ id, task, onEdit, onDelete, onStatusChange, isDragging, viewMode = 'board' }) => {
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
+
   // Setup sortable draggable element
   const {
     attributes,
@@ -64,13 +70,13 @@ function TaskCard({ id, task, onEdit, onDelete, onStatusChange, isDragging }) {
   const getPriorityColor = (priority) => {
     switch (priority) {
       case 'High':
-        return { bg: 'bg-red-300', text: 'text-red-700' };
+        return { bg: 'bg-destructive/20', text: 'text-destructive' };
       case 'Medium':
-        return { bg: 'bg-yellow-300', text: 'text-yellow-700' };
+        return { bg: 'bg-warning/20', text: 'text-warning' };
       case 'Low':
-        return { bg: 'bg-green-300', text: 'text-green-700' };
+        return { bg: 'bg-success/20', text: 'text-success' };
       default:
-        return { bg: 'bg-gray-300', text: 'text-gray-700' };
+        return { bg: 'bg-muted', text: 'text-muted-foreground' };
     }
   };
 
@@ -89,93 +95,300 @@ function TaskCard({ id, task, onEdit, onDelete, onStatusChange, isDragging }) {
   };
 
   // Handle toggling completion status
-  const handleStatusToggle = () => {
-    const newStatus = isCompleted ? 'Todo' : 'Done';
+  const handleStatusToggle = (checked) => {
+    const newStatus = checked ? 'Done' : 'Todo';
     onStatusChange(task.id, newStatus);
   };
 
-  return (
+  // Handle delete button click
+  const handleDeleteClick = () => {
+    setDeleteDialogOpen(true);
+  };
+
+  // Handle confirmation of delete
+  const handleConfirmDelete = () => {
+    onDelete(task.id);
+    setDeleteDialogOpen(false);
+  };
+  
+  // Toggle description expansion
+  const toggleExpand = (e) => {
+    e.stopPropagation();
+    setIsExpanded(!isExpanded);
+  };
+
+  // Determine if we should show the expand button
+  const shouldShowExpandButton = task.description && task.description.length > 100;
+
+  // Generate cards based on view mode
+  const renderBoardCard = () => (
     <div
       ref={setNodeRef}
       style={style}
-      className={`flex flex-col m-3 p-6 items-start gap-3 rounded-xl shadow-xl 
-        ${isCompleted ? 'bg-zinc-800' : 'bg-steel'}
-        ${taskIsOverdue ? 'border-l-4 border-red-500' : ''}
-        ${isCurrentlyDragging ? 'border-2 border-blue-500 shadow-2xl' : ''}
-        transition-all duration-200 touch-manipulation`}
+      className={cn(
+        "flex flex-col p-4 items-start gap-3 rounded-xl shadow-md transition-all duration-200 touch-manipulation",
+        isCompleted ? "bg-muted" : "bg-card",
+        taskIsOverdue ? "border-l-4 border-destructive" : "",
+        isCurrentlyDragging ? "shadow-xl ring-2 ring-ring" : "hover:shadow-lg hover:ring-1 hover:ring-ring/50",
+        "w-full overflow-hidden"
+      )}
       {...attributes}
     >
-      <div className="flex w-full justify-between items-center gap-3">
-        <div className="flex items-center gap-2">
+      <div className="flex w-full justify-between items-center gap-2">
+        <div className="flex items-center gap-2 min-w-0">
           <div 
             {...listeners} 
-            className="cursor-grab active:cursor-grabbing p-1.5 -ml-1.5 rounded hover:bg-opacity-20 hover:bg-white touch-manipulation"
+            className="cursor-grab active:cursor-grabbing p-1 -ml-1 rounded hover:bg-muted-foreground/10 touch-manipulation"
             aria-label="Drag handle"
           >
-            <img src={dragIcon} alt="Drag" className="w-5 h-5" />
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="opacity-60">
+              <path d="M4 4.5C4 5.05228 3.55228 5.5 3 5.5C2.44772 5.5 2 5.05228 2 4.5C2 3.94772 2.44772 3.5 3 3.5C3.55228 3.5 4 3.94772 4 4.5Z" fill="currentColor"/>
+              <path d="M4 8C4 8.55228 3.55228 9 3 9C2.44772 9 2 8.55228 2 8C2 7.44772 2.44772 7 3 7C3.55228 7 4 7.44772 4 8Z" fill="currentColor"/>
+              <path d="M4 11.5C4 12.0523 3.55228 12.5 3 12.5C2.44772 12.5 2 12.0523 2 11.5C2 10.9477 2.44772 10.5 3 10.5C3.55228 10.5 4 10.9477 4 11.5Z" fill="currentColor"/>
+              <path d="M8 4.5C8 5.05228 7.55228 5.5 7 5.5C6.44772 5.5 6 5.05228 6 4.5C6 3.94772 6.44772 3.5 7 3.5C7.55228 3.5 8 3.94772 8 4.5Z" fill="currentColor"/>
+              <path d="M8 8C8 8.55228 7.55228 9 7 9C6.44772 9 6 8.55228 6 8C6 7.44772 6.44772 7 7 7C7.55228 7 8 7.44772 8 8Z" fill="currentColor"/>
+              <path d="M8 11.5C8 12.0523 7.55228 12.5 7 12.5C6.44772 12.5 6 12.0523 6 11.5C6 10.9477 6.44772 10.5 7 10.5C7.55228 10.5 8 10.9477 8 11.5Z" fill="currentColor"/>
+            </svg>
           </div>
-          <h3 className={`font-semibold ${isCompleted ? 'line-through text-gray-400' : ''}`}>
+          <Checkbox 
+            id={`task-${task.id}`}
+            checked={isCompleted}
+            onCheckedChange={handleStatusToggle}
+            className="mr-1 data-[state=checked]:bg-success data-[state=checked]:border-success flex-shrink-0"
+          />
+          <h3 className={cn(
+            "font-medium text-sm truncate",
+            isCompleted && "line-through text-muted-foreground"
+          )}>
             {task.title}
           </h3>
         </div>
-        <div className="flex gap-2 justify-center items-center">
-          <button
-            onClick={handleStatusToggle}
-            className={`p-1.5 rounded-full w-6 h-6 flex items-center justify-center
-              ${isCompleted 
-                ? 'bg-green-500 text-white' 
-                : 'border-2 border-gray-400 hover:border-white'}`}
-            aria-label={isCompleted ? "Mark as incomplete" : "Mark as complete"}
-          >
-            {isCompleted && <img src={checkIcon} alt="Completed" className="w-4 h-4" />}
-          </button>
-          <button
-            onClick={onEdit}
-            className="p-1.5 rounded hover:bg-opacity-20 hover:bg-white focus:outline-none focus:ring-2 focus:ring-steel"
-            aria-label="Edit task"
-          >
-            <img
-              src={editIcon}
-              className="w-5 h-5"
-              alt="Edit"
-            />
-          </button>
-          <button
-            onClick={onDelete}
-            className="p-1.5 rounded hover:bg-opacity-20 hover:bg-white focus:outline-none focus:ring-2 focus:ring-steel"
-            aria-label="Delete task"
-          >
-            <img
-              src={removeIcon}
-              className="w-5 h-5"
-              alt="Delete"
-            />
-          </button>
+        <div className="flex gap-1 justify-center items-center flex-shrink-0">
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={onEdit}
+                  className="p-1.5 rounded-md hover:bg-muted focus:outline-none focus:ring-1 focus:ring-ring"
+                  aria-label="Edit task"
+                >
+                  <Pencil className="w-3.5 h-3.5" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Edit task</p>
+              </TooltipContent>
+            </Tooltip>
+            
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={handleDeleteClick}
+                  className="p-1.5 rounded-md hover:bg-muted focus:outline-none focus:ring-1 focus:ring-ring"
+                  aria-label="Delete task"
+                >
+                  <Trash className="w-3.5 h-3.5" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Delete task</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </div>
       </div>
-      <div>
-        <p className={`font-text ${isCompleted ? 'text-gray-400' : ''}`}>{task.description}</p>
-      </div>
       
-      <div className="flex flex-wrap gap-2 w-full">
-        <div className={`flex gap-2 ${priorityColors.bg} p-2 rounded-xl ${isCompleted ? 'opacity-60' : ''}`}>
-          <p className={`font-text ${priorityColors.text} text-sm`}>{task.priority}</p>
+      {task.description && (
+        <div className="w-full">
+          <div className={cn(
+            "text-xs text-muted-foreground",
+            isCompleted && "text-muted-foreground/60",
+            isExpanded ? "line-clamp-none" : "line-clamp-2"
+          )}>
+            {task.description}
+          </div>
+          {shouldShowExpandButton && (
+            <button 
+              onClick={toggleExpand} 
+              className="flex items-center text-xs text-primary hover:underline mt-1.5"
+            >
+              {isExpanded ? (
+                <>
+                  <ChevronUp className="h-3 w-3 mr-1" />
+                  Show less
+                </>
+              ) : (
+                <>
+                  <ChevronDown className="h-3 w-3 mr-1" />
+                  Show more
+                </>
+              )}
+            </button>
+          )}
+        </div>
+      )}
+      
+      <div className="flex flex-wrap gap-2 w-full mt-auto">
+        <div className={cn(
+          "flex gap-1 p-1.5 rounded-md",
+          priorityColors.bg,
+          isCompleted && "opacity-60"
+        )}>
+          <p className={cn(
+            "text-xs font-medium",
+            priorityColors.text
+          )}>
+            {task.priority}
+          </p>
         </div>
         
         {task.dueDate && (
-          <div className={`flex gap-2 items-center p-2 rounded-xl text-sm
-            ${taskIsOverdue && !isCompleted ? 'bg-red-900/30 text-red-200' : 'bg-zinc-700/50 text-gray-300'}
-            ${isCompleted ? 'opacity-60' : ''}`}
-          >
-            <img src={calendarIcon} alt="Due date" className="w-4 h-4" />
+          <div className={cn(
+            "flex gap-1 items-center p-1.5 rounded-md text-xs",
+            taskIsOverdue && !isCompleted ? "bg-destructive/20 text-destructive" : "bg-muted text-muted-foreground",
+            isCompleted && "opacity-60"
+          )}>
+            <Calendar className="w-3 h-3" />
             <span>{formatDueDate(task.dueDate)}</span>
           </div>
         )}
       </div>
-      
-      <p className="font-text text-light-steel text-sm">Created: {task.createdAt}</p>
     </div>
   );
-}
+  
+  const renderListCard = () => (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={cn(
+        "flex flex-row p-3 items-center gap-3 rounded-lg shadow-sm transition-all duration-200 touch-manipulation",
+        isCompleted ? "bg-muted" : "bg-card", 
+        taskIsOverdue ? "border-l-4 border-destructive pl-2" : "",
+        isCurrentlyDragging ? "shadow-lg ring-2 ring-ring" : "hover:shadow-md hover:bg-card/95 hover:ring-1 hover:ring-ring/40",
+        "w-full"
+      )}
+      {...attributes}
+    >
+      <div className="flex items-center gap-3 flex-shrink-0">
+        <div 
+          {...listeners} 
+          className="cursor-grab active:cursor-grabbing p-1 rounded hover:bg-muted-foreground/10 touch-manipulation"
+          aria-label="Drag handle"
+        >
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="opacity-60">
+            <path d="M4 4.5C4 5.05228 3.55228 5.5 3 5.5C2.44772 5.5 2 5.05228 2 4.5C2 3.94772 2.44772 3.5 3 3.5C3.55228 3.5 4 3.94772 4 4.5Z" fill="currentColor"/>
+            <path d="M4 8C4 8.55228 3.55228 9 3 9C2.44772 9 2 8.55228 2 8C2 7.44772 2.44772 7 3 7C3.55228 7 4 7.44772 4 8Z" fill="currentColor"/>
+            <path d="M4 11.5C4 12.0523 3.55228 12.5 3 12.5C2.44772 12.5 2 12.0523 2 11.5C2 10.9477 2.44772 10.5 3 10.5C3.55228 10.5 4 10.9477 4 11.5Z" fill="currentColor"/>
+            <path d="M8 4.5C8 5.05228 7.55228 5.5 7 5.5C6.44772 5.5 6 5.05228 6 4.5C6 3.94772 6.44772 3.5 7 3.5C7.55228 3.5 8 3.94772 8 4.5Z" fill="currentColor"/>
+            <path d="M8 8C8 8.55228 7.55228 9 7 9C6.44772 9 6 8.55228 6 8C6 7.44772 6.44772 7 7 7C7.55228 7 8 7.44772 8 8Z" fill="currentColor"/>
+            <path d="M8 11.5C8 12.0523 7.55228 12.5 7 12.5C6.44772 12.5 6 12.0523 6 11.5C6 10.9477 6.44772 10.5 7 10.5C7.55228 10.5 8 10.9477 8 11.5Z" fill="currentColor"/>
+          </svg>
+        </div>
+        
+        <Checkbox 
+          id={`task-list-${task.id}`}
+          checked={isCompleted}
+          onCheckedChange={handleStatusToggle}
+          className="data-[state=checked]:bg-success data-[state=checked]:border-success"
+        />
+      </div>
+      
+      <div className="flex-grow min-w-0 overflow-hidden">
+        <h3 className={cn(
+          "font-medium text-sm truncate",
+          isCompleted && "line-through text-muted-foreground"
+        )}>
+          {task.title}
+        </h3>
+        
+        {task.description && (
+          <p className={cn(
+            "text-xs line-clamp-1 mt-0.5 text-muted-foreground",
+            isCompleted && "text-muted-foreground/60"
+          )}>
+            {task.description}
+          </p>
+        )}
+      </div>
+      
+      <div className="flex gap-2 items-center flex-shrink-0">
+        {task.dueDate && (
+          <div className={cn(
+            "flex gap-1 items-center p-1.5 rounded-md text-xs whitespace-nowrap",
+            taskIsOverdue && !isCompleted ? "bg-destructive/20 text-destructive" : "bg-muted text-muted-foreground",
+            isCompleted && "opacity-60",
+            "hidden sm:flex"
+          )}>
+            <Calendar className="w-3 h-3" />
+            <span>{formatDueDate(task.dueDate)}</span>
+          </div>
+        )}
+        
+        <div className={cn(
+          "flex gap-1 p-1.5 rounded-md",
+          priorityColors.bg,
+          isCompleted && "opacity-60"
+        )}>
+          <p className={cn(
+            "text-xs font-medium",
+            priorityColors.text
+          )}>
+            {task.priority}
+          </p>
+        </div>
+        
+        <div className="flex gap-1">
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={onEdit}
+                  className="p-1.5 rounded-md hover:bg-muted focus:outline-none focus:ring-1 focus:ring-ring"
+                  aria-label="Edit task"
+                >
+                  <Pencil className="w-3.5 h-3.5" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Edit task</p>
+              </TooltipContent>
+            </Tooltip>
+            
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={handleDeleteClick}
+                  className="p-1.5 rounded-md hover:bg-muted focus:outline-none focus:ring-1 focus:ring-ring"
+                  aria-label="Delete task"
+                >
+                  <Trash className="w-3.5 h-3.5" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Delete task</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
+      </div>
+    </div>
+  );
+
+  return (
+    <>
+      {viewMode === 'board' ? renderBoardCard() : renderListCard()}
+      
+      <DeleteTaskDialog
+        isOpen={deleteDialogOpen}
+        onClose={() => setDeleteDialogOpen(false)}
+        onConfirm={handleConfirmDelete}
+        taskTitle={task.title}
+      />
+    </>
+  );
+});
+
+// Adicionar displayName para melhorar ferramentas de desenvolvimento
+TaskCard.displayName = 'TaskCard';
 
 export default TaskCard;

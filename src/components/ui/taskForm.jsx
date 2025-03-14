@@ -1,271 +1,245 @@
-import React, { useState, useEffect } from 'react';
-import arrowDownIcon from '../../assets/icons/CaretDown.svg';
-import calendarIcon from '../../assets/icons/Calendar.svg';
+import React, { useEffect } from 'react';
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Calendar, X, Loader2 } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DatePicker } from "@/components/ui/date-picker";
+import { taskSchema } from '@/lib/schemas';
+import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
-const PriorityDropdown = ({ value, onChange, isOpen, setIsOpen }) => {
-  const priorities = ['High', 'Medium', 'Low'];
-  
+const Textarea = React.forwardRef(({ className, ...props }, ref) => {
   return (
-    <div className="w-full relative">
-      <button
-        type="button"
-        className="flex flex-row justify-between items-center p-2.5 bg-charcoal border-1 border-steel rounded-xl text-white w-full transition-colors hover:bg-zinc-700"
-        onClick={() => setIsOpen(!isOpen)}
-        aria-haspopup="listbox"
-        aria-expanded={isOpen}
-        aria-label="Select priority"
-      >
-        {value}
-        <img src={arrowDownIcon} alt="Toggle dropdown" className={`transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
-      </button>
-      
-      {isOpen && (
-        <div 
-          className="absolute top-full left-0 mt-1 w-full z-10"
-          role="listbox"
-          aria-label="Priority options"
-        >
-          <ul className="bg-charcoal border-1 border-steel rounded-xl w-full shadow-lg">
-            {priorities.map((priority) => (
-              <li
-                key={priority}
-                className="p-2.5 hover:bg-zinc-800 cursor-pointer transition-colors"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onChange(priority);
-                  setIsOpen(false);
-                }}
-                role="option"
-                aria-selected={value === priority}
-              >
-                {priority}
-              </li>
-            ))}
-
-          </ul>
-        </div>
+    <textarea
+      className={cn(
+        "flex min-h-[80px] w-full rounded-md border border-input bg-charcoal px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+        className
       )}
-    </div>
+      ref={ref}
+      {...props}
+    />
   );
-};
+});
+Textarea.displayName = "Textarea";
 
 export const TaskForm = ({ isOpen, onClose, onAddTask, onEditTask, task }) => {
-  const [formData, setFormData] = useState({
-    id: '',
-    title: '',
-    description: '',
-    priority: 'Medium',
-    status: 'Todo',
-    createdAt: '',
-    dueDate: ''
-  });
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [titleError, setTitleError] = useState('');
   const isEditMode = Boolean(task?.id);
-
-  useEffect(() => {
-    const handleEscKey = (event) => {
-      if (isOpen && event.key === 'Escape') {
-        onClose();
-      }
-    };
-
-    window.addEventListener('keydown', handleEscKey);
-    
-    return () => {
-      window.removeEventListener('keydown', handleEscKey);
-    };
-  }, [isOpen, onClose]);
-
-  // Format date for the input field (YYYY-MM-DD)
-  const formatDateForInput = (dateString) => {
-    if (!dateString) return '';
-    
-    try {
-      const date = new Date(dateString);
-      return date.toISOString().split('T')[0];
-    } catch (e) {
-      return '';
-    }
-  };
-
-  // Format date for display (MM/DD/YYYY)
-  const formatDateForDisplay = (dateString) => {
-    if (!dateString) return '';
-    
-    try {
-      const date = new Date(dateString);
-      return date.toLocaleDateString();
-    } catch (e) {
-      return '';
-    }
-  };
-
-  // Reset form or load task data when modal opens
-  useEffect(() => {
-    // Only run when modal opens
-    if (isOpen) {
-      if (task) {
-        // Edit mode - load task data
-        setFormData({
-          id: task.id,
-          title: task.title,
-          description: task.description || '',
-          priority: task.priority || 'Medium',
-          status: task.status || 'Todo',
-          createdAt: task.createdAt,
-          dueDate: task.dueDate || ''
-        });
-      } else {
-        // Add mode - reset form
-        resetForm();
-      }
-      setTitleError('');
-    }
-  }, [isOpen, task]);
-
-  // Helper function to reset the form
-  const resetForm = () => {
-    setFormData({
-      id: '',
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
+  
+  // Form configuration with react-hook-form and zod validation
+  const form = useForm({
+    resolver: zodResolver(taskSchema),
+    defaultValues: {
       title: '',
       description: '',
       priority: 'Medium',
       status: 'Todo',
-      createdAt: '',
-      dueDate: ''
-    });
-  };
+      dueDate: null
+    },
+  });
 
-  // Stop rendering if the modal is closed
-  if (!isOpen) return null;
-
-  const handleChange = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-    if (field === 'title' && titleError) {
-      setTitleError('');
-    }
-  };
-
-  const handleSave = () => {
-    if (!formData.title.trim()) {
-      setTitleError('Title is required');
-      return;
-    }
-
-    if (isEditMode) {
-      // Edit existing task - make sure to preserve the original ID and status
-      onEditTask({
-        ...formData,
-        id: task.id // Ensure we're using the original task ID
+  // Update form when editing task
+  useEffect(() => {
+    if (isOpen && task) {
+      // When editing, populate the form with task data
+      form.reset({
+        title: task.title,
+        description: task.description || '',
+        priority: task.priority || 'Medium',
+        status: task.status || 'Todo',
+        dueDate: task.dueDate ? new Date(task.dueDate) : null
       });
-    } else {
-      // Create new task
-      const newTask = {
-        ...formData,
-        id: Date.now().toString(),
-        createdAt: new Date().toLocaleDateString(),
-        status: 'Todo', // Explicitly set status for new tasks
-      };
-      onAddTask(newTask);
+    } else if (isOpen) {
+      // When adding new, reset to defaults
+      form.reset({
+        title: '',
+        description: '',
+        priority: 'Medium',
+        status: 'Todo',
+        dueDate: null
+      });
     }
+  }, [isOpen, task, form]);
 
-    // Make sure to reset the form after saving
-    resetForm();
-    onClose();
+  const onSubmit = async (data) => {
+    try {
+      setIsSubmitting(true);
+      
+      // Format the date for storage
+      const formattedData = {
+        ...data,
+        dueDate: data.dueDate ? data.dueDate.toISOString().split('T')[0] : null
+      };
+      
+      if (isEditMode) {
+        // Edit existing task
+        await onEditTask({
+          ...formattedData,
+          id: task.id,
+          createdAt: task.createdAt
+        });
+        toast.success('Task updated successfully!');
+      } else {
+        // Create new task
+        await onAddTask({
+          ...formattedData,
+          id: Date.now().toString(),
+          createdAt: new Date().toLocaleDateString()
+        });
+        toast.success('Task added successfully!');
+      }
+      
+      onClose();
+    } catch (error) {
+      console.error('Error saving task:', error);
+      toast.error(isEditMode ? 'Failed to update task' : 'Failed to add task');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
-    <div 
-      className="fixed inset-0 bg-charcoal/50 flex items-center justify-center drop-shadow-2xl"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="form-title"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
-    >
-      <div 
-        className="bg-zinc-800 p-6 rounded-xl flex flex-col gap-4 w-full max-w-md mx-4 animate-fadeIn"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <h2 id="form-title" className="text-xl font-semibold text-white">
-          {isEditMode ? 'Edit Task' : 'Add Task'}
-        </h2>
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-md bg-zinc-800 border-steel">
+        <DialogHeader>
+          <DialogTitle>{isEditMode ? 'Edit Task' : 'Add Task'}</DialogTitle>
+        </DialogHeader>
         
-        <div>
-          <input
-            placeholder="Task title"
-            className={`p-2.5 border-1 rounded-xl bg-charcoal border-steel w-full transition-colors focus:outline-none focus:ring-2 focus:ring-steel-blue ${
-              titleError ? 'border-red-500 ring-1 ring-red-500' : ''
-            }`}
-            onChange={(e) => handleChange('title', e.target.value)}
-            value={formData.title}
-            aria-label="Task title"
-            aria-required="true"
-            aria-invalid={Boolean(titleError)}
-          />
-          {titleError && (
-            <p className="text-red-500 text-sm mt-1">{titleError}</p>
-          )}
-        </div>
-        
-        <textarea
-          placeholder="Task description"
-          className="p-2.5 border-1 rounded-xl bg-charcoal border-steel min-h-[100px] transition-colors focus:outline-none focus:ring-2 focus:ring-steel-blue"
-          onChange={(e) => handleChange('description', e.target.value)}
-          value={formData.description}
-          aria-label="Task description"
-        />
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="text-white text-sm block mb-1">Priority</label>
-            <PriorityDropdown 
-              value={formData.priority}
-              onChange={(value) => handleChange('priority', value)}
-              isOpen={isDropdownOpen}
-              setIsOpen={setIsDropdownOpen}
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="title"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>
+                    Task Title <span className="text-destructive">*</span>
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="Enter task title"
+                      className="bg-charcoal border-steel"
+                      {...field}
+                      disabled={isSubmitting}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-          </div>
-          
-          <div>
-            <label className="text-white text-sm block mb-1">Due Date</label>
-            <div className="relative">
-              <input
-                type="date"
-                className="p-2.5 pl-10 border-1 rounded-xl bg-charcoal border-steel w-full transition-colors focus:outline-none focus:ring-2 focus:ring-steel-blue"
-                onChange={(e) => handleChange('dueDate', e.target.value)}
-                value={formatDateForInput(formData.dueDate)}
-                aria-label="Due date"
+            
+            <FormField
+              control={form.control}
+              name="description"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Description</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder="Enter task description"
+                      className="bg-charcoal border-steel min-h-[100px]"
+                      {...field}
+                      disabled={isSubmitting}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="priority"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Priority</FormLabel>
+                    <Select
+                      disabled={isSubmitting}
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                      value={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger className="bg-charcoal border-steel">
+                          <SelectValue placeholder="Select priority" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent className="bg-zinc-800 border-steel">
+                        <SelectItem value="High">High</SelectItem>
+                        <SelectItem value="Medium">Medium</SelectItem>
+                        <SelectItem value="Low">Low</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-              <img 
-                src={calendarIcon} 
-                alt="Calendar" 
-                className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5" 
+              
+              <FormField
+                control={form.control}
+                name="dueDate"
+                render={({ field }) => (
+                  <FormItem className="flex flex-col">
+                    <FormLabel>Due Date</FormLabel>
+                    <Controller
+                      control={form.control}
+                      name="dueDate"
+                      render={({ field }) => (
+                        <div className="relative">
+                          <DatePicker 
+                            date={field.value} 
+                            setDate={field.onChange}
+                          />
+                          {field.value && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="absolute right-2 top-1/2 h-6 w-6 -translate-y-1/2 p-0"
+                              onClick={() => field.onChange(null)}
+                              disabled={isSubmitting}
+                            >
+                              <X className="h-3.5 w-3.5" />
+                              <span className="sr-only">Clear due date</span>
+                            </Button>
+                          )}
+                        </div>
+                      )}
+                    />
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
             </div>
-          </div>
-        </div>
 
-        <div className="flex gap-2 mt-2">
-          <button
-            onClick={onClose}
-            className="p-2.5 bg-charcoal border-1 border-steel rounded-xl text-white hover:bg-zinc-700 flex-1 transition-colors"
-            type="button"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleSave}
-            className="p-2.5 bg-steel-blue rounded-xl text-white hover:bg-steel-blue-dark flex-1 transition-colors"
-            type="button"
-          >
-            {isEditMode ? 'Update' : 'Save'}
-          </button>
-        </div>
-      </div>
-    </div>
+            <DialogFooter className="gap-2 mt-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onClose}
+                className="bg-charcoal border-steel hover:bg-zinc-700"
+                disabled={isSubmitting}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                className="bg-steel-blue hover:bg-steel-blue-dark"
+                disabled={isSubmitting}
+              >
+                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {isEditMode ? 'Update' : 'Save'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
   );
 };
 

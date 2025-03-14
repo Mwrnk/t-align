@@ -1,4 +1,4 @@
-import Header from './header';
 import Layout from './layout';
+import Header from './header';
 
-export { Header, Layout };
+export { Layout, Header };

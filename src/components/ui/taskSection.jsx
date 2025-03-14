@@ -1,55 +1,85 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useDroppable } from '@dnd-kit/core';
-import { 
-  SortableContext, 
-  verticalListSortingStrategy 
-} from '@dnd-kit/sortable';
+import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { cn } from '@/lib/utils';
 import TaskCard from './taskCard';
 
-function TaskSection({ id, title, tasks = [], onEdit, onDelete, onStatusChange }) {
-  // Setup droppable area
+const TaskSection = ({ id, title, tasks, onEdit, onDelete, onStatusChange, viewMode }) => {
+  // Setup droppable
   const { setNodeRef, isOver } = useDroppable({
-    id: id,
+    id,
   });
 
+  // Estado local para garantir que o componente reaja imediatamente a mudanças de visualização
+  const [currentViewMode, setCurrentViewMode] = useState(viewMode);
+  
+  // Força a atualização imediata quando o modo de visualização muda
+  useEffect(() => {
+    setCurrentViewMode(viewMode);
+  }, [viewMode]);
+
+  const isListView = currentViewMode === 'list';
+  const isBoardView = currentViewMode === 'board';
+
   return (
-    <div 
+    <div
       ref={setNodeRef}
-      className={`flex-1 shrink-0 basis-0 min-h-full p-2.5 flex flex-col justify-start 
-        items-center gap-3 self-stretch rounded-xl bg-charcoal 
-        ${isOver ? 'ring-2 ring-blue-500 opacity-90' : ''}
-        transition-all duration-200`}
+      className={cn(
+        "flex flex-col rounded-xl transition-colors transform",
+        isBoardView 
+          ? "h-full min-h-[50vh] shadow-sm" 
+          : "w-full mb-3 overflow-hidden",
+        isOver 
+          ? "bg-accent/30 ring-2 ring-ring/30" 
+          : "bg-card hover:bg-card/90"
+      )}
+      id={`section-${id}`}
     >
-      <div className="font-title text-center w-full">
-        <h1>{title}</h1>
-        <span className="text-sm text-gray-400">{tasks.length} tasks</span>
+      <div className="flex justify-between items-center py-3 px-4 border-b border-border">
+        <h2 className={cn(
+          "font-semibold",
+          isBoardView ? "text-xl" : "text-lg"
+        )}>{title}</h2>
+        <div className="bg-primary/20 px-2.5 py-1 rounded-full text-xs font-semibold text-primary">
+          {tasks.length}
+        </div>
       </div>
-      <div className="w-full">
-        <SortableContext 
-          items={tasks.map(task => task.id)} 
-          strategy={verticalListSortingStrategy}
-        >
+      
+      <div 
+        className={cn(
+          "flex-grow overflow-y-auto scrollbar-thin",
+          isListView 
+            ? "flex flex-col gap-2 p-2" 
+            : "grid gap-3 p-3 auto-rows-max content-start",
+          // Ajuste de densidade para colunas
+          isBoardView && "grid-cols-1"
+        )}
+        style={{
+          maxHeight: isBoardView ? 'calc(100vh - 12rem)' : 'auto',
+        }}
+      >
+        <SortableContext items={tasks.map(t => t.id)} strategy={verticalListSortingStrategy}>
           {tasks.map((task) => (
             <TaskCard
               key={task.id}
               id={task.id}
               task={task}
               onEdit={() => onEdit(task)}
-              onDelete={() => onDelete(task.id)}
+              onDelete={onDelete}
               onStatusChange={onStatusChange}
+              viewMode={currentViewMode}
             />
           ))}
         </SortableContext>
         
-        {/* Empty state placeholder when no tasks are present */}
         {tasks.length === 0 && (
-          <div className="p-4 text-center text-gray-500 italic">
-            No tasks here. Drag a task or add a new one.
+          <div className="flex flex-col items-center justify-center h-24 p-6 my-4 rounded-lg bg-muted/20 border border-border/40">
+            <p className="text-center text-muted-foreground">Nenhuma tarefa</p>
           </div>
         )}
       </div>
     </div>
   );
-}
+};
 
 export default TaskSection;
