@@ -128,7 +128,7 @@ const TaskCard = memo(({ id, task, onEdit, onDelete, onStatusChange, isDragging,
       className={cn(
         "flex flex-col p-4 items-start gap-3 rounded-xl shadow-md transition-all duration-200 touch-manipulation",
         isCompleted ? "bg-muted" : "bg-card",
-        taskIsOverdue ? "border-l-4 border-destructive" : "",
+        taskIsOverdue ? "border-l-4 border-destructive" : "border border-border",
         isCurrentlyDragging ? "shadow-xl ring-2 ring-ring" : "hover:shadow-lg hover:ring-1 hover:ring-ring/50",
         "w-full overflow-hidden"
       )}
@@ -263,7 +263,7 @@ const TaskCard = memo(({ id, task, onEdit, onDelete, onStatusChange, isDragging,
       className={cn(
         "flex flex-row p-3 items-center gap-3 rounded-lg shadow-sm transition-all duration-200 touch-manipulation",
         isCompleted ? "bg-muted" : "bg-card", 
-        taskIsOverdue ? "border-l-4 border-destructive pl-2" : "",
+        taskIsOverdue ? "border-l-4 border-destructive pl-2" : "border border-border",
         isCurrentlyDragging ? "shadow-lg ring-2 ring-ring" : "hover:shadow-md hover:bg-card/95 hover:ring-1 hover:ring-ring/40",
         "w-full"
       )}
