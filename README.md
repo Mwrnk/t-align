@@ -163,5 +163,3 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - [dnd kit](https://dndkit.com/) for drag and drop functionality
 
 ---
-
-Made with ❤️ using React and Vite
