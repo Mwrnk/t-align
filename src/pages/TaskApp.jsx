@@ -1,20 +1,27 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
-import { 
-  DndContext, 
-  DragOverlay, 
-  closestCorners, 
-  KeyboardSensor, 
-  PointerSensor, 
+import {
+  DndContext,
+  DragOverlay,
+  closestCorners,
+  KeyboardSensor,
+  PointerSensor,
   TouchSensor,
-  useSensor, 
-  useSensors 
+  useSensor,
+  useSensors,
 } from '@dnd-kit/core';
 import { arrayMove, sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { toast } from 'sonner';
 import { Header, Layout } from '../components/layout';
 import { TaskSection, TaskForm, TaskCard } from '../components/ui';
 import ExportTasksDialog from '../components/ui/ExportTasksDialog';
-import { getAllTasks, saveTasks, addTask as addTaskService, updateTask as updateTaskService, deleteTask as deleteTaskService, sortTasks } from '../lib/taskService';
+import {
+  getAllTasks,
+  saveTasks,
+  addTask as addTaskService,
+  updateTask as updateTaskService,
+  deleteTask as deleteTaskService,
+  sortTasks,
+} from '../lib/taskService';
 import { cn } from '../lib/utils';
 
 // Configuração do viewport para melhor responsividade
@@ -25,7 +32,7 @@ const configureViewport = () => {
     meta.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0';
     document.head.appendChild(meta);
   }
-  
+
   // Prevenir overflow horizontal
   document.body.classList.add('overflow-x-hidden');
   return () => document.body.classList.remove('overflow-x-hidden');
@@ -40,23 +47,27 @@ export default function TaskApp() {
   const [selectedPriority, setSelectedPriority] = useState('All');
   const [activeId, setActiveId] = useState(null);
   // Estado para visualização com um valor chave para forçar recarregamento
-  const [viewMode, setViewMode] = useState(() => localStorage.getItem('viewMode') || 'board');
+  const [viewMode, setViewMode] = useState(
+    () => localStorage.getItem('viewMode') || 'board'
+  );
   const [renderKey, setRenderKey] = useState(Date.now()); // Key para forçar re-renderização
-  const [sortingMethod, setSortingMethod] = useState(() => localStorage.getItem('sortingMethod') || 'date');
+  const [sortingMethod, setSortingMethod] = useState(
+    () => localStorage.getItem('sortingMethod') || 'date'
+  );
 
   // Definir os sensores para arrastar e soltar fora do useMemo para evitar problemas de hooks
-  const pointerSensor = useSensor(PointerSensor, { 
-    activationConstraint: { distance: 8 } 
+  const pointerSensor = useSensor(PointerSensor, {
+    activationConstraint: { distance: 8 },
   });
-  
-  const touchSensor = useSensor(TouchSensor, { 
-    activationConstraint: { delay: 200, tolerance: 8 } 
+
+  const touchSensor = useSensor(TouchSensor, {
+    activationConstraint: { delay: 200, tolerance: 8 },
   });
-  
-  const keyboardSensor = useSensor(KeyboardSensor, { 
-    coordinateGetter: sortableKeyboardCoordinates 
+
+  const keyboardSensor = useSensor(KeyboardSensor, {
+    coordinateGetter: sortableKeyboardCoordinates,
   });
-  
+
   const sensors = useSensors(pointerSensor, touchSensor, keyboardSensor);
 
   // Carregamento inicial das tarefas
@@ -81,7 +92,7 @@ export default function TaskApp() {
   // Aplicar ordenação quando necessário
   useEffect(() => {
     if (tasks.length) {
-      setTasks(prev => sortTasks([...prev], sortingMethod));
+      setTasks((prev) => sortTasks([...prev], sortingMethod));
     }
   }, [sortingMethod]);
 
@@ -89,14 +100,17 @@ export default function TaskApp() {
   useEffect(() => configureViewport(), []);
 
   // Alternar entre modos de visualização
-  const handleViewModeChange = useCallback((newViewMode) => {
-    if (newViewMode !== viewMode) {
-      setViewMode(newViewMode);
-      localStorage.setItem('viewMode', newViewMode);
-      // Forçar re-renderização para garantir atualização imediata da interface
-      setRenderKey(Date.now());
-    }
-  }, [viewMode]);
+  const handleViewModeChange = useCallback(
+    (newViewMode) => {
+      if (newViewMode !== viewMode) {
+        setViewMode(newViewMode);
+        localStorage.setItem('viewMode', newViewMode);
+        // Forçar re-renderização para garantir atualização imediata da interface
+        setRenderKey(Date.now());
+      }
+    },
+    [viewMode]
+  );
 
   // Abrir modal para edição ou criação de tarefas
   const openModal = useCallback((task = null) => {
@@ -111,35 +125,45 @@ export default function TaskApp() {
   }, []);
 
   // Adicionar nova tarefa
-  const addTask = useCallback((task) => {
-    const newTask = addTaskService(task);
-    setTasks(prev => sortTasks([...prev, newTask], sortingMethod));
-    toast.success('Task added successfully!');
-  }, [sortingMethod]);
+  const addTask = useCallback(
+    (task) => {
+      const newTask = addTaskService(task);
+      setTasks((prev) => sortTasks([...prev, newTask], sortingMethod));
+      toast.success('Task added successfully!');
+    },
+    [sortingMethod]
+  );
 
   // Atualizar tarefa existente
-  const updateTask = useCallback((updatedTask) => {
-    if (editingTask) {
-      const result = updateTaskService(updatedTask);
-      if (result) {
-        setTasks(prev => sortTasks(
-          prev.map(task => task.id === updatedTask.id ? updatedTask : task),
-          sortingMethod
-        ));
-        toast.success('Task updated successfully!');
+  const updateTask = useCallback(
+    (updatedTask) => {
+      if (editingTask) {
+        const result = updateTaskService(updatedTask);
+        if (result) {
+          setTasks((prev) =>
+            sortTasks(
+              prev.map((task) =>
+                task.id === updatedTask.id ? updatedTask : task
+              ),
+              sortingMethod
+            )
+          );
+          toast.success('Task updated successfully!');
+        } else {
+          toast.error('Error updating task');
+        }
       } else {
-        toast.error('Error updating task');
+        addTask(updatedTask);
       }
-    } else {
-      addTask(updatedTask);
-    }
-  }, [editingTask, addTask, sortingMethod]);
+    },
+    [editingTask, addTask, sortingMethod]
+  );
 
   // Excluir tarefa
   const deleteTask = useCallback((id) => {
     const success = deleteTaskService(id);
     if (success) {
-      setTasks(prev => prev.filter(task => task.id !== id));
+      setTasks((prev) => prev.filter((task) => task.id !== id));
       toast.success('Task deleted successfully!');
     } else {
       toast.error('Error deleting task');
@@ -148,14 +172,14 @@ export default function TaskApp() {
 
   // Alterar status da tarefa
   const updateTaskStatus = useCallback((id, newStatus) => {
-    setTasks(prev => {
-      const updatedTasks = prev.map(task => 
+    setTasks((prev) => {
+      const updatedTasks = prev.map((task) =>
         task.id === id ? { ...task, status: newStatus } : task
       );
       saveTasks(updatedTasks);
       return updatedTasks;
     });
-    
+
     // Feedback visual para o usuário
     if (newStatus === 'Done') {
       toast.success('Task completed!');
@@ -167,38 +191,43 @@ export default function TaskApp() {
   }, []);
 
   // Filtrar tarefas com base na pesquisa e prioridade
-  const filterTasks = useCallback((taskList) => {
-    return taskList.filter(task => {
-      const matchesSearch = searchQuery.trim() === '' ||
-        task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (task.description && task.description.toLowerCase().includes(searchQuery.toLowerCase()));
-      
-      const matchesPriority = selectedPriority === 'All' || 
-        task.priority === selectedPriority;
+  const filterTasks = useCallback(
+    (taskList) => {
+      return taskList.filter((task) => {
+        const matchesSearch =
+          searchQuery.trim() === '' ||
+          task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          (task.description &&
+            task.description.toLowerCase().includes(searchQuery.toLowerCase()));
 
-      return matchesSearch && matchesPriority;
-    });
-  }, [searchQuery, selectedPriority]);
+        const matchesPriority =
+          selectedPriority === 'All' || task.priority === selectedPriority;
+
+        return matchesSearch && matchesPriority;
+      });
+    },
+    [searchQuery, selectedPriority]
+  );
 
   // Listas filtradas de tarefas - memoized para evitar recálculos
-  const todoTasks = useMemo(() => 
-    filterTasks(tasks.filter(task => task.status === 'Todo')),
+  const todoTasks = useMemo(
+    () => filterTasks(tasks.filter((task) => task.status === 'Todo')),
     [tasks, filterTasks]
   );
-  
-  const inProgressTasks = useMemo(() => 
-    filterTasks(tasks.filter(task => task.status === 'In Progress')),
+
+  const inProgressTasks = useMemo(
+    () => filterTasks(tasks.filter((task) => task.status === 'In Progress')),
     [tasks, filterTasks]
   );
-  
-  const doneTasks = useMemo(() => 
-    filterTasks(tasks.filter(task => task.status === 'Done')),
+
+  const doneTasks = useMemo(
+    () => filterTasks(tasks.filter((task) => task.status === 'Done')),
     [tasks, filterTasks]
   );
 
   // Tarefa ativa durante arrastar e soltar
-  const activeTask = useMemo(() => 
-    tasks.find(task => task.id === activeId),
+  const activeTask = useMemo(
+    () => tasks.find((task) => task.id === activeId),
     [tasks, activeId]
   );
 
@@ -208,94 +237,108 @@ export default function TaskApp() {
   }, []);
 
   // Lidar com evento durante arrastar
-  const handleDragOver = useCallback((event) => {
-    const { active, over } = event;
-    
-    if (!over) return;
-    
-    // Se arrastar sobre um container
-    if (over.id === 'Todo' || over.id === 'In Progress' || over.id === 'Done') {
-      const task = tasks.find(t => t.id === active.id);
-      
-      // Atualizar apenas se o status mudaria
-      if (task && task.status !== over.id) {
-        setTasks(prev => {
-          const updatedTasks = prev.map(t => 
-            t.id === active.id ? { ...t, status: over.id } : t
+  const handleDragOver = useCallback(
+    (event) => {
+      const { active, over } = event;
+
+      if (!over) return;
+
+      // Se arrastar sobre um container
+      if (
+        over.id === 'Todo' ||
+        over.id === 'In Progress' ||
+        over.id === 'Done'
+      ) {
+        const task = tasks.find((t) => t.id === active.id);
+
+        // Atualizar apenas se o status mudaria
+        if (task && task.status !== over.id) {
+          setTasks((prev) => {
+            const updatedTasks = prev.map((t) =>
+              t.id === active.id ? { ...t, status: over.id } : t
+            );
+            saveTasks(updatedTasks);
+            return updatedTasks;
+          });
+        }
+        return;
+      }
+
+      // Arrastar sobre outra tarefa
+      const activeTask = tasks.find((t) => t.id === active.id);
+      const overTask = tasks.find((t) => t.id === over.id);
+
+      // Se tarefas estão em containers diferentes
+      if (activeTask && overTask && activeTask.status !== overTask.status) {
+        setTasks((prev) => {
+          const updatedTasks = prev.map((t) =>
+            t.id === active.id ? { ...t, status: overTask.status } : t
           );
           saveTasks(updatedTasks);
           return updatedTasks;
         });
       }
-      return;
-    }
-    
-    // Arrastar sobre outra tarefa
-    const activeTask = tasks.find(t => t.id === active.id);
-    const overTask = tasks.find(t => t.id === over.id);
-    
-    // Se tarefas estão em containers diferentes
-    if (activeTask && overTask && activeTask.status !== overTask.status) {
-      setTasks(prev => {
-        const updatedTasks = prev.map(t => 
-          t.id === active.id ? { ...t, status: overTask.status } : t
-        );
+    },
+    [tasks]
+  );
+
+  // Lidar com fim de operação de arrastar
+  const handleDragEnd = useCallback(
+    (event) => {
+      const { active, over } = event;
+
+      setActiveId(null);
+
+      if (!over) return;
+
+      // Se arrastar para um container
+      if (
+        over.id === 'Todo' ||
+        over.id === 'In Progress' ||
+        over.id === 'Done'
+      ) {
+        const task = tasks.find((t) => t.id === active.id);
+        if (!task) return;
+
+        const oldStatus = task.status;
+        const newStatus = over.id;
+
+        if (oldStatus !== newStatus) {
+          setTasks((prev) => {
+            const updatedTasks = prev.map((t) =>
+              t.id === active.id ? { ...t, status: newStatus } : t
+            );
+            saveTasks(updatedTasks);
+            return updatedTasks;
+          });
+
+          toast.info(`Task moved to ${newStatus}`);
+        }
+        return;
+      }
+
+      // Reordenar tarefas
+      const activeTaskIndex = tasks.findIndex((t) => t.id === active.id);
+      const overTaskIndex = tasks.findIndex((t) => t.id === over.id);
+
+      if (activeTaskIndex === overTaskIndex) return;
+
+      setTasks((prev) => {
+        const updatedTasks = arrayMove(prev, activeTaskIndex, overTaskIndex);
         saveTasks(updatedTasks);
         return updatedTasks;
       });
-    }
-  }, [tasks]);
 
-  // Lidar com fim de operação de arrastar
-  const handleDragEnd = useCallback((event) => {
-    const { active, over } = event;
-    
-    setActiveId(null);
-    
-    if (!over) return;
-
-    // Se arrastar para um container
-    if (over.id === 'Todo' || over.id === 'In Progress' || over.id === 'Done') {
-      const task = tasks.find(t => t.id === active.id);
-      if (!task) return;
-      
-      const oldStatus = task.status;
-      const newStatus = over.id;
-      
-      if (oldStatus !== newStatus) {
-        setTasks(prev => {
-          const updatedTasks = prev.map(t => 
-            t.id === active.id ? { ...t, status: newStatus } : t
-          );
-          saveTasks(updatedTasks);
-          return updatedTasks;
-        });
-        
-        toast.info(`Task moved to ${newStatus}`);
-      }
-      return;
-    }
-    
-    // Reordenar tarefas
-    const activeTaskIndex = tasks.findIndex(t => t.id === active.id);
-    const overTaskIndex = tasks.findIndex(t => t.id === over.id);
-    
-    if (activeTaskIndex === overTaskIndex) return;
-    
-    setTasks(prev => {
-      const updatedTasks = arrayMove(prev, activeTaskIndex, overTaskIndex);
-      saveTasks(updatedTasks);
-      return updatedTasks;
-    });
-    
-    toast.info('Task order updated');
-  }, [tasks]);
+      toast.info('Task order updated');
+    },
+    [tasks]
+  );
 
   return (
     <Layout>
       {/* Header com opções de filtragem e navegação */}
       <div className="bg-background shadow-md z-10 sticky top-0 p-4 flex flex-col md:flex-row justify-between items-center gap-3">
-        <Header 
+        <Header
           handleButton={openModal}
           onSearch={setSearchQuery}
           onPriorityFilter={setSelectedPriority}
@@ -306,7 +349,7 @@ export default function TaskApp() {
           <ExportTasksDialog tasks={tasks} />
         </div>
       </div>
-      
+
       {/* Contexto de arrastar e soltar */}
       <DndContext
         sensors={sensors}
@@ -316,13 +359,13 @@ export default function TaskApp() {
         onDragEnd={handleDragEnd}
       >
         {/* Container principal com layout responsivo */}
-        <div 
+        <div
           key={`container-${renderKey}`}
           className={cn(
-            "p-4 mx-auto w-full max-w-screen-2xl",
-            viewMode === 'board' 
-              ? "grid grid-cols-1 md:grid-cols-3 gap-4" 
-              : "flex flex-col gap-2 max-w-4xl mx-auto"
+            'p-4 mx-auto w-full max-w-screen-2xl',
+            viewMode === 'board'
+              ? 'grid grid-cols-1 md:grid-cols-3 gap-4'
+              : 'flex flex-col gap-2 max-w-4xl mx-auto'
           )}
         >
           {/* Formulário de tarefas */}
@@ -333,7 +376,7 @@ export default function TaskApp() {
             onEditTask={updateTask}
             task={editingTask}
           />
-          
+
           {/* Contador de tarefas no modo lista */}
           {viewMode === 'list' && (
             <div className="flex justify-between items-center p-2 mb-2">
@@ -345,7 +388,7 @@ export default function TaskApp() {
               </div>
             </div>
           )}
-          
+
           {/* Seções de tarefas */}
           <TaskSection
             key={`todo-${renderKey}`}
@@ -377,7 +420,7 @@ export default function TaskApp() {
             onStatusChange={updateTaskStatus}
             viewMode={viewMode}
           />
-          
+
           {/* Overlay para arrastar e soltar */}
           <DragOverlay>
             {activeId && activeTask && (
@@ -395,4 +438,3 @@ export default function TaskApp() {
     </Layout>
   );
 }
-
