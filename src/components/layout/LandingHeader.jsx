@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Button } from "@/components/ui/button";
+import { Button } from '@/components/ui/button';
 import { Github, Moon, Sun } from 'lucide-react';
 import { useTheme } from '@/lib/ThemeProvider';
 import {
@@ -8,7 +8,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from '@/components/ui/dropdown-menu';
 
 const LandingHeader = () => {
   const { theme, setTheme } = useTheme();
@@ -36,15 +36,15 @@ const LandingHeader = () => {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => setTheme("light")}>
+              <DropdownMenuItem onClick={() => setTheme('light')}>
                 <Sun className="mr-2 h-4 w-4" />
                 <span>Light</span>
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setTheme("dark")}>
+              <DropdownMenuItem onClick={() => setTheme('dark')}>
                 <Moon className="mr-2 h-4 w-4" />
                 <span>Dark</span>
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setTheme("system")}>
+              <DropdownMenuItem onClick={() => setTheme('system')}>
                 <span>System</span>
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -52,7 +52,11 @@ const LandingHeader = () => {
 
           {/* GitHub link */}
           <Button variant="outline" size="icon" className="h-9 w-9" asChild>
-            <a href="https://github.com/yourusername/task-manager" target="_blank" rel="noopener noreferrer">
+            <a
+              href="https://github.com/Mwrnk/t-align"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
               <Github className="h-4 w-4" />
               <span className="sr-only">GitHub</span>
             </a>
